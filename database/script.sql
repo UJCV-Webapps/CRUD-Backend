@@ -23,4 +23,4 @@ CREATE TABLE jobs(
 
 ALTER TABLE employees
 ADD CONSTRAINT fk_employee_job
-FOREIGN KEY (employee_id) REFERENCES jobs(job_id);
+FOREIGN KEY (job_id) REFERENCES jobs(job_id);
