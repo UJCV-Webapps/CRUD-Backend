@@ -5,6 +5,7 @@ require('./controllers/employees.php');
 $request_method = $_SERVER['REQUEST_METHOD'];
 $response = array();
 header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
 
 //Rutas dependiendo del verbo http recibido
 switch ($request_method) {

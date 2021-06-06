@@ -72,18 +72,17 @@ function saveEmployee($form_data)
         return $response;
     }
 
-    // Validacion para solo aceptar un determinado formato de imagenes
-    if ($_FILES['profile']['type'] != 'image/png' && $_FILES['profile']['type'] != 'image/jpg' && $_FILES['profile']['type'] != 'image/jpeg') {
-        $response['error'] = "El formato de la foto de perfil no es correcto, por favor selecciona una imagen valida.";
-        return $response;
-    }
-
 
     //Verificamos si el directorio existe de no ser asi lo creamos
     createDirectoryIfNotExist($path);
 
     //La imagen no es obligatoria, verificamos si el usuario envio una imagen para guardarla
     if (isset($_FILES['profile'])) {
+        // Validacion para solo aceptar un determinado formato de imagenes
+        if ($_FILES['profile']['type'] != 'image/png' && $_FILES['profile']['type'] != 'image/jpg' && $_FILES['profile']['type'] != 'image/jpeg') {
+            $response['error'] = "El formato de la foto de perfil no es correcto, por favor selecciona una imagen valida.";
+            return $response;
+        }
         //Nombre del archivo que se subira
         $name = time() . '_' . $_FILES['profile']['name'];
         if (!move_uploaded_file($_FILES['profile']['tmp_name'], $path . $name)) {
