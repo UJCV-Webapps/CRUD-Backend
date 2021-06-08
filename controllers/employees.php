@@ -9,10 +9,52 @@ require('./helpers/db_validations.php');
 //Se debe obtener unicamente un empleado, puede ser por id o email, el empleado debe de estar activo
 //Debe de retornar el trabajo 'JOIN jobs'
 //METHOD: GET
-function getEmployee($query)
+function getEmployee($param)
 {
     $response = array();
-    $response['query'] = $query;
+    global $connection;
+    //Comprobar si es un email
+    $pattern = "/^[\w\-\.]+@([\w-]+\.)+[\w-]{2,4}$/";
+
+    if (preg_match_all($pattern, $param) == 1) {
+        //Declarando consulta
+        $query = "SELECT e.employee_id, e.first_name, e.last_name, e.email, e.phone_number, e.salary, e.hire_date, e.profile, j.job_title FROM employees AS e
+        JOIN jobs AS j
+        ON e.job_id = j.job_id
+        WHERE e.email=? && active=1";
+
+        //Es un correo, hacemos la consulta mediante email
+        $stmt = $connection->prepare($query);
+        $stmt->bind_param('s', $email);
+        $email = $param;
+
+        if ($stmt->execute()) {
+            $row = $stmt->get_result();
+            $response = fromArrToJSON($row);
+        }
+        return $response;
+    } else {
+        if (!is_numeric($param)) {
+            http_response_code(400);
+            $response['error'] = "El ID debe de ser numerico";
+            return $response;
+        }
+
+        $query = "SELECT e.employee_id, e.first_name, e.last_name, e.email, e.phone_number, e.salary, e.hire_date, e.profile, j.job_title FROM employees AS e
+        JOIN jobs AS j
+        ON e.job_id = j.job_id
+        WHERE e.employee_id=? && active=1";
+
+        $stmt = $connection->prepare($query);
+        $stmt->bind_param('i', $employee_id);
+        $employee_id = $param;
+
+        if ($stmt->execute()) {
+            $row = $stmt->get_result();
+            $response = fromArrToJSON($row);
+            return $response;
+        }
+    }
     return $response;
 };
 

@@ -19,3 +19,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
         echo json_encode($response);
     }
 }
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    global $connection;
+    if (!isset($_POST['employee_id'])) {
+        http_response_code(400);
+        $response['error'] = "Se necesita especificar el ID del usuario.";
+        echo json_encode($response);
+        return;
+    }
+
+    $employee_id = $_POST['employee_id'];
+    $active = 1;
+
+    $query = "UPDATE employees SET active=? WHERE employee_id=?";
+
+    $stmt = $connection->prepare($query);
+    $stmt->bind_param('ii', $active, $employee_id);
+    if ($stmt->execute()) {
+        $response["msg"] = "Empleado activado correctamente.";
+        echo json_encode($response);
+    }
+}

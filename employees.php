@@ -3,6 +3,7 @@ require('./controllers/employees.php');
 
 //Obetemos el la solicitud HTTP desde el frontend
 $request_method = $_SERVER['REQUEST_METHOD'];
+
 $response = array();
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
