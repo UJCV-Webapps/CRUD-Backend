@@ -8,7 +8,7 @@ CREATE TABLE employees(
     last_name VARCHAR(50) NOT NULL,
     email VARCHAR(70) UNIQUE NOT NULL,
     phone_number VARCHAR(8) NOT NULL,
-    hire_date DATE NOT NULL,
+    hire_date DATE DEFAULT CURDATE(),
     salary FLOAT NOT NULL,
     active BOOLEAN DEFAULT TRUE,
     profile VARCHAR(150) NULL,
@@ -23,4 +23,9 @@ CREATE TABLE jobs(
 
 ALTER TABLE employees
 ADD CONSTRAINT fk_employee_job
-FOREIGN KEY (employee_id) REFERENCES jobs(job_id);
+FOREIGN KEY (job_id) REFERENCES jobs(job_id);
+
+-- SEEDERS
+INSERT INTO jobs(job_title) VALUES('Gerente General');
+INSERT INTO jobs(job_title) VALUES('Secretario');
+INSERT INTO jobs(job_title) VALUES('Gerente Marketing');
