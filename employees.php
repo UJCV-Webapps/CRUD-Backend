@@ -48,6 +48,11 @@ switch ($request_method) {
         break;
     case 'PUT':
         //TODO: Validar, obtener datos y llamar al controlador para actualizar la información
+        $response = updateEmployee($_POST);
+        if(isset($response['error'])){
+            http_response_code(400);
+        }
+        //no se que hace el echo json_encode($response);
         break;
     case 'DELETE':
         //TODO: Validar, obtener datos y llamar al controlador para eliminar

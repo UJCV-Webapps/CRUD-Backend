@@ -99,7 +99,7 @@ function saveEmployee($form_data)
         $response["error"] = "El salario es obligatorio y debe de ser numerico.";
         return $response;
     } elseif (!isset($form_data['job_id'])) {
-        $response["error"] = "Porfavor especifique el role a desempeñar dentrod e la organización.";
+        $response["error"] = "Porfavor especifique el role a desempeñar dentro de la organización.";
         return $response;
     }
 
@@ -150,7 +150,7 @@ function saveEmployee($form_data)
         $first_name = $form_data['first_name'];
         $last_name = $form_data['last_name'];
         $email = $form_data['email'];
-        $phone_number = $form_data['phone_number'];;
+        $phone_number = $form_data['phone_number'];
         $salary = $form_data['salary'];
 
         //Ejecutamos la operación
@@ -172,6 +172,75 @@ function saveEmployee($form_data)
 //METHOD: PUT
 function updateEmployee()
 {
+    $response = array();
+    global $connection;
+    //Pattern para verificar la estructura del email
+    $pattern = "/^[\w\-\.]+@([\w-]+\.)+[\w-]{2,4}$/";
+
+
+    //Validando los datos del frontend, recicle el que se usa para el saveEmployee
+    if (!isset($form_data['first_name']) || isset($form_data['first name']) == '') {
+        $response["error"] = "Por favor, escriba un nombre para poder actualizar la informacion del empleado.";
+        return $response;
+    } elseif (!isset($form_data['last_name'])) {
+        $response["error"] = "Por favor, escriba un apellido para poder actualizar la informacion del empleado.";
+        return $response;
+    } elseif (!isset($form_data['email'])) {
+        $response["error"] = "Por favor, escriba un correo electronico para poder actualizar la informacion del empleado.";
+        return $response;
+    } elseif (!isset($form_data['phone_number'])) {
+        $response["error"] = "Por favor, escriba un numero de telefono para poder actualizar la informacion del empleado.";
+        return $response;
+    } elseif (!isset($form_data['salary']) || !is_numeric($form_data['salary'])) {
+        $response["error"] = "Por favor, escriba el salario para poder actualizar la informacion del empleado.";
+        return $response;
+    } elseif (!isset($form_data['job_id'])) {
+        $response["error"] = "Por favor, escriba un rol para poder actualizar la informacion del empleado.";
+        return $response;
+    }
+
+    if (preg_match_all($pattern, $form_data['email']) == 0) {
+        $response["error"] = "Formato de correo electrónico no valido.";
+        return $response;
+    }
+
+    //Funcion dedicada a verificar si el email ya se encuentra registrado en la base de datos
+    //copie muchas cosas de arriba perdon por no saber ;-;
+    if (existEmail($form_data['email'])) {
+        $response['error'] = "La dirección de correo electrónico ya se encuentra registrada en el sistema.";
+        return $response;
+    }
+
+    try{
+    //Prepar el Statment para la consulta de update
+    $stmt = $connection->prepare("UPDATE employees SET job_id = ?, first_name = ?, last_name = ?, email = ?, phone_number = ?, hire_date = ?, salary = ?, active = ?, profile = ?  
+    WHERE employee_id = ?");
+
+    //Definicion de los compos con su tipo
+    $stmt->bind_param("issssds", $job_id, $first_name, $last_name, $email, $phone_number, $salary, $profile);
+
+    //Asignación de los datos a variables para guardar en la BD
+    $profile = $path . $name;
+    $job_id = (int)$form_data['job_id'];
+    $first_name = $form_data['first_name'];
+    $last_name = $form_data['last_name'];
+    $email = $form_data['email'];
+    $phone_number = $form_data['phone_number'];
+    $salary = $form_data['salary'];
+
+    //Ejecutamos la operación
+    $stmt->execute();
+
+    //Cerramos conexiones
+    $stmt->close();
+    $connection->close();
+
+    //Respondemos el servicio con un status 200 que todo salio bien
+    $response["msg"] = "Empleado actualizado correctamente";
+    return $response;
+    }catch(Exception $e){
+        var_dump($e);
+    }
 }
 
 
