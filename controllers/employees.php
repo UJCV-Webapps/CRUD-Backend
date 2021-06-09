@@ -189,16 +189,17 @@ function saveEmployee($form_data)
 
 //Se deben actualizar los datos del empleado en base a su ID, validar los datos antes de realizar la actualización
 //METHOD: PUT
-function updateEmployee()
+function updateEmployee($form_data)
 {
     $response = array();
     global $connection;
     //Pattern para verificar la estructura del email
     $pattern = "/^[\w\-\.]+@([\w-]+\.)+[\w-]{2,4}$/";
+    $path = 'assets/profiles/';
 
 
     //Validando los datos del frontend, recicle el que se usa para el saveEmployee
-    if (!isset($form_data['first_name']) || isset($form_data['first name']) == '') {
+    if (!isset($form_data['first_name']) || isset($form_data['first_name']) == '') {
         $response["error"] = "Por favor, escriba un nombre para poder actualizar la informacion del empleado.";
         return $response;
     } elseif (!isset($form_data['last_name'])) {
@@ -230,34 +231,57 @@ function updateEmployee()
         return $response;
     }
 
-    try{
-    //Prepar el Statment para la consulta de update
-    $stmt = $connection->prepare("UPDATE employees SET job_id = ?, first_name = ?, last_name = ?, email = ?, phone_number = ?, hire_date = ?, salary = ?, active = ?, profile = ?  
-    WHERE employee_id = ?");
+    //La imagen no es obligatoria, verificamos si el usuario envio una imagen para guardarla
+    if (isset($_FILES['profile'])) {
+        // Validacion para solo aceptar un determinado formato de imagenes
+        if ($_FILES['profile']['type'] != 'image/png' && $_FILES['profile']['type'] != 'image/jpg' && $_FILES['profile']['type'] != 'image/jpeg') {
+            $response['error'] = "El formato de la foto de perfil no es correcto, por favor selecciona una imagen valida.";
+            return $response;
+        }
+        //Nombre del archivo que se subira
+        $name = time() . '_' . $_FILES['profile']['name'];
+        if (!move_uploaded_file($_FILES['profile']['tmp_name'], $path . $name)) {
+            //Se ejecuta si se produce un error al momento de guardar la imagen
+            $response['error'] = "Se produjo un error al momento de subir la imagen.";
+            return $response;
+        }
+    } else {
+        //Si el usuario no manda una imagen se guarda con la imagen por defecto
+        $name = "default.jpg";
+    }
 
-    //Definicion de los compos con su tipo
-    $stmt->bind_param("issssds", $job_id, $first_name, $last_name, $email, $phone_number, $salary, $profile);
+    try {
+        //Prepar el Statment para la consulta de update
+        $query =    "UPDATE employees
+                    SET job_id = ?, first_name = ?, last_name = ?, email = ?, phone_number = ?, salary = ?, profile = ?  
+                    WHERE employee_id = ?";
 
-    //Asignación de los datos a variables para guardar en la BD
-    $profile = $path . $name;
-    $job_id = (int)$form_data['job_id'];
-    $first_name = $form_data['first_name'];
-    $last_name = $form_data['last_name'];
-    $email = $form_data['email'];
-    $phone_number = $form_data['phone_number'];
-    $salary = $form_data['salary'];
+        $stmt = $connection->prepare($query);
 
-    //Ejecutamos la operación
-    $stmt->execute();
+        //Definicion de los compos con su tipo
+        $stmt->bind_param("isssdssi", $job_id, $first_name, $last_name, $email, $phone_number, $salary, $profile, $employee_id);
 
-    //Cerramos conexiones
-    $stmt->close();
-    $connection->close();
+        //Asignación de los datos a variables para guardar en la BD
+        $profile = $path . $name;
+        $job_id = (int)$form_data['job_id'];
+        $first_name = $form_data['first_name'];
+        $last_name = $form_data['last_name'];
+        $email = $form_data['email'];
+        $phone_number = $form_data['phone_number'];
+        $salary = $form_data['salary'];
+        $employee_id = $form_data['employee_id'];
 
-    //Respondemos el servicio con un status 200 que todo salio bien
-    $response["msg"] = "Empleado actualizado correctamente";
-    return $response;
-    }catch(Exception $e){
+        //Ejecutamos la operación
+        $stmt->execute();
+
+        //Cerramos conexiones
+        $stmt->close();
+        $connection->close();
+
+        //Respondemos el servicio con un status 200 que todo salio bien
+        $response["msg"] = "Empleado actualizado correctamente";
+        return $response;
+    } catch (Exception $e) {
         var_dump($e);
     }
 }

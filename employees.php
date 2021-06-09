@@ -7,6 +7,8 @@ $request_method = $_SERVER['REQUEST_METHOD'];
 $response = array();
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
+header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE');
 
 //Rutas dependiendo del verbo http recibido
 switch ($request_method) {
@@ -19,6 +21,24 @@ switch ($request_method) {
 
         //Obtenemos el ultimo parametro ya que de venir seria en la ultima posición
         $arg = $args_arr[count($args_arr)  - 1];
+
+        if (isset($_GET['delete'])) {
+            if (!isset($_GET['employee_id']) || $_GET['employee_id'] == '' || !is_numeric($_GET['employee_id'])) {
+                http_response_code(400);
+                $response['error'] = "Se debe especificar el ID del empleado y este debe ser numerico.";
+                echo json_encode($response);
+            } else {
+                $id = $_GET['employee_id'];
+                $response = deleteEmployee($id);
+                if (isset($response['error'])) {
+                    http_response_code(400);
+                    echo json_encode($response);
+                } else {
+                    echo json_encode($response);
+                }
+            }
+            return;
+        }
 
         //Si el ultimo argumento esta vacio o inicia con 'employee.php' es porque no hay parametros en la URL
         if (str_starts_with($arg, 'employees.php') || $arg == '') {
@@ -48,14 +68,16 @@ switch ($request_method) {
         break;
     case 'PUT':
         //TODO: Validar, obtener datos y llamar al controlador para actualizar la información
-        $response = updateEmployee($_POST);
-        if(isset($response['error'])){
+        $data = json_decode(file_get_contents("php://input"), true);
+        $response = updateEmployee($data);
+        if (isset($response['error'])) {
             http_response_code(400);
         }
-        //no se que hace el echo json_encode($response);
+        echo json_encode($response);
         break;
     case 'DELETE':
         //TODO: Validar, obtener datos y llamar al controlador para eliminar
+
         if (!isset($_GET['employee_id']) || $_GET['employee_id'] == '' || !is_numeric($_GET['employee_id'])) {
             http_response_code(400);
             $response['error'] = "Se debe especificar el ID del empleado y este debe ser numerico.";
