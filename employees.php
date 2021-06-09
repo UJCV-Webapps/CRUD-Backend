@@ -56,6 +56,20 @@ switch ($request_method) {
         break;
     case 'DELETE':
         //TODO: Validar, obtener datos y llamar al controlador para eliminar
+        if (!isset($_GET['employee_id']) || $_GET['employee_id'] == '' || !is_numeric($_GET['employee_id'])) {
+            http_response_code(400);
+            $response['error'] = "Se debe especificar el ID del empleado y este debe ser numerico.";
+            echo json_encode($response);
+        } else {
+            $id = $_GET['employee_id'];
+            $response = deleteEmployee($id);
+            if (isset($response['error'])) {
+                http_response_code(400);
+                echo json_encode($response);
+            } else {
+                echo json_encode($response);
+            }
+        }
         break;
     default:
         //Si el verbo HTTP no es ninguno de los declarados se envia el siguiente error
