@@ -3,6 +3,8 @@
 require('./database/connection.php');
 require('./helpers/utils.php');
 require('./helpers/db_validations.php');
+header('Access-Control-Allow-Origin: *');
+
 
 // Aqui iran las funciones que se ejecutaran dependiendo de la petición
 
@@ -63,8 +65,25 @@ function getEmployee($param)
 //METHOD: GET
 function getEmployees($page = 1)
 {
+    global $connection;
     $response = array();
-    $response['msg'] = "GET EMPLOYEES " . $page;
+    $limit = 10;
+    $offset = ((int)$page - 1) * $limit;
+
+    $query = "SELECT e.employee_id, e.first_name, e.last_name, e.email, e.phone_number, e.salary, e.hire_date, e.profile, j.job_title FROM employees AS e
+            JOIN jobs AS j
+            ON e.job_id = j.job_id
+            WHERE active=1
+            LIMIT ? OFFSET ?
+            ";
+
+    $stmt = $connection->prepare($query);
+    $stmt->bind_param('ii', $limit, $offset);
+
+    if ($stmt->execute()) {
+        $result = fromArrToJSON($stmt->get_result());
+        return $result;
+    }
     return $response;
 };
 
@@ -177,6 +196,22 @@ function updateEmployee()
 
 //Debe 'eliminar un usuario' pero en realidad debe pasar su estado activo=false
 //METHOD: DELETE
-function deleteEmployee()
+function deleteEmployee($id)
 {
+    global $connection;
+    $response = array();
+
+    if (!existeId($id)) {
+        $response['error'] = "Empleado no esta registrado.";
+        return $response;
+    }
+
+    $stmt = $connection->prepare("UPDATE employees SET active=? WHERE employee_id=?");
+    $stmt->bind_param('ii', $active, $employee_id);
+    $active = 0;
+    $employee_id = $id;
+    if ($stmt->execute()) {
+        $response["msg"] = "Usuario eliminado correctamente";
+        return $response;
+    }
 };
