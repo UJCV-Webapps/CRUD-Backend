@@ -2,11 +2,13 @@
 require('./controllers/employees.php');
 
 //Obetemos el la solicitud HTTP desde el frontend
-$request_method = $_SERVER['REQUEST_METHOD'];
+$request_method = $_GET['method'];
 
 $response = array();
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
+header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE');
 
 //Rutas dependiendo del verbo http recibido
 switch ($request_method) {
@@ -20,8 +22,26 @@ switch ($request_method) {
         //Obtenemos el ultimo parametro ya que de venir seria en la ultima posición
         $arg = $args_arr[count($args_arr)  - 1];
 
+        if (isset($_GET['delete'])) {
+            if (!isset($_GET['employee_id']) || $_GET['employee_id'] == '' || !is_numeric($_GET['employee_id'])) {
+                http_response_code(400);
+                $response['error'] = "Se debe especificar el ID del empleado y este debe ser numerico.";
+                echo json_encode($response);
+            } else {
+                $id = $_GET['employee_id'];
+                $response = deleteEmployee($id);
+                if (isset($response['error'])) {
+                    http_response_code(400);
+                    echo json_encode($response);
+                } else {
+                    echo json_encode($response);
+                }
+            }
+            return;
+        }
+
         //Si el ultimo argumento esta vacio o inicia con 'employee.php' es porque no hay parametros en la URL
-        if (str_starts_with($arg, 'employees.php') || $arg == '') {
+        if (!isset($_GET['query'])) {
 
             //Si no hay parametros en la URL debemos recibir el Query Param de page, el cual debe ser numerico
             if (!isset($_GET['page']) || !is_numeric($_GET['page'])) {
@@ -35,7 +55,7 @@ switch ($request_method) {
                 $response = getEmployees($page);
             }
         } else {
-            $response = getEmployee($arg);
+            $response = getEmployee($_GET['query']);
         }
         echo json_encode($response);
         break;
@@ -48,9 +68,30 @@ switch ($request_method) {
         break;
     case 'PUT':
         //TODO: Validar, obtener datos y llamar al controlador para actualizar la información
+        $data = json_decode(file_get_contents("php://input"), true);
+        $response = updateEmployee($data);
+        if (isset($response['error'])) {
+            http_response_code(400);
+        }
+        echo json_encode($response);
         break;
     case 'DELETE':
         //TODO: Validar, obtener datos y llamar al controlador para eliminar
+
+        if (!isset($_GET['employee_id']) || $_GET['employee_id'] == '' || !is_numeric($_GET['employee_id'])) {
+            http_response_code(400);
+            $response['error'] = "Se debe especificar el ID del empleado y este debe ser numerico.";
+            echo json_encode($response);
+        } else {
+            $id = $_GET['employee_id'];
+            $response = deleteEmployee($id);
+            if (isset($response['error'])) {
+                http_response_code(400);
+                echo json_encode($response);
+            } else {
+                echo json_encode($response);
+            }
+        }
         break;
     default:
         //Si el verbo HTTP no es ninguno de los declarados se envia el siguiente error
