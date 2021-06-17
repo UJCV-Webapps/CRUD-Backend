@@ -2,7 +2,7 @@
 require('./controllers/employees.php');
 
 //Obetemos el la solicitud HTTP desde el frontend
-$request_method = $_SERVER['REQUEST_METHOD'];
+$request_method = $_GET['method'];
 
 $response = array();
 header('Content-Type: application/json');
@@ -41,7 +41,7 @@ switch ($request_method) {
         }
 
         //Si el ultimo argumento esta vacio o inicia con 'employee.php' es porque no hay parametros en la URL
-        if (str_starts_with($arg, 'employees.php') || $arg == '') {
+        if (!isset($_GET['query'])) {
 
             //Si no hay parametros en la URL debemos recibir el Query Param de page, el cual debe ser numerico
             if (!isset($_GET['page']) || !is_numeric($_GET['page'])) {
@@ -55,7 +55,7 @@ switch ($request_method) {
                 $response = getEmployees($page);
             }
         } else {
-            $response = getEmployee($arg);
+            $response = getEmployee($_GET['query']);
         }
         echo json_encode($response);
         break;

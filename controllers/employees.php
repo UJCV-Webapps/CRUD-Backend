@@ -42,7 +42,7 @@ function getEmployee($param)
             return $response;
         }
 
-        $query = "SELECT e.employee_id, e.first_name, e.last_name, e.email, e.phone_number, e.salary, e.hire_date, e.profile, j.job_title FROM employees AS e
+        $query = "SELECT e.employee_id, e.first_name, e.last_name, e.email, e.phone_number, e.salary, e.hire_date, e.profile, j.job_title, e.job_id FROM employees AS e
         JOIN jobs AS j
         ON e.job_id = j.job_id
         WHERE e.employee_id=? && active=1";
@@ -70,7 +70,7 @@ function getEmployees($page = 1)
     $limit = 10;
     $offset = ((int)$page - 1) * $limit;
 
-    $query = "SELECT e.employee_id, e.first_name, e.last_name, e.email, e.phone_number, e.salary, e.hire_date, e.profile, j.job_title FROM employees AS e
+    $query = "SELECT e.employee_id, e.first_name, e.last_name, e.email, e.phone_number, e.salary, e.hire_date, e.profile, j.job_title, e.job_id FROM employees AS e
             JOIN jobs AS j
             ON e.job_id = j.job_id
             WHERE active=1
@@ -227,27 +227,44 @@ function updateEmployee($form_data)
     //Funcion dedicada a verificar si el email ya se encuentra registrado en la base de datos
     //copie muchas cosas de arriba perdon por no saber ;-;
     if (existEmail($form_data['email'])) {
-        $response['error'] = "La dirección de correo electrónico ya se encuentra registrada en el sistema.";
-        return $response;
+        $query = "SELECT email FROM employees WHERE employee_id=?";
+        $stmt = $connection->prepare($query);
+        $stmt->bind_param('i', $employee_id);
+        $employee_id = $form_data['employee_id'];
+        $stmt->execute();
+        $row = $stmt->get_result();
+        $result = $row->fetch_array();
+
+        if ($result['email'] != $form_data['email']) {
+            $response['error'] = "La dirección de correo electrónico ya se encuentra registrada en el sistema.";
+            return $response;
+        }
     }
 
     //La imagen no es obligatoria, verificamos si el usuario envio una imagen para guardarla
-    if (isset($_FILES['profile'])) {
-        // Validacion para solo aceptar un determinado formato de imagenes
-        if ($_FILES['profile']['type'] != 'image/png' && $_FILES['profile']['type'] != 'image/jpg' && $_FILES['profile']['type'] != 'image/jpeg') {
-            $response['error'] = "El formato de la foto de perfil no es correcto, por favor selecciona una imagen valida.";
-            return $response;
-        }
-        //Nombre del archivo que se subira
-        $name = time() . '_' . $_FILES['profile']['name'];
-        if (!move_uploaded_file($_FILES['profile']['tmp_name'], $path . $name)) {
-            //Se ejecuta si se produce un error al momento de guardar la imagen
-            $response['error'] = "Se produjo un error al momento de subir la imagen.";
-            return $response;
+    if (isset($form_data['profile'])) {
+        if ($form_data['profile'] != 'ready') {
+            $image_parts = explode(";base64,", $form_data['profile']);
+            $image_type_aux = explode("image/", $image_parts[0]);
+            $image_type = $image_type_aux[1];
+            $name = time() . '_' . '.' . $image_type;
+            $output_file = $path . $name;
+            $profile = $output_file;
+            file_put_contents($output_file, file_get_contents($form_data['profile']));
+        } else {
+            $query = 'SELECT profile FROM employees WHERE employee_id=?';
+            $stmt = $connection->prepare($query);
+            $stmt->bind_param('i', $employee_id);
+            $employee_id = $form_data['employee_id'];
+            $stmt->execute();
+            $row = $stmt->get_result();
+            $result = $row->fetch_array();
+            $profile = $result['profile'];
         }
     } else {
         //Si el usuario no manda una imagen se guarda con la imagen por defecto
         $name = "default.jpg";
+        $profile = $path . $name;
     }
 
     try {
@@ -262,7 +279,6 @@ function updateEmployee($form_data)
         $stmt->bind_param("isssdssi", $job_id, $first_name, $last_name, $email, $phone_number, $salary, $profile, $employee_id);
 
         //Asignación de los datos a variables para guardar en la BD
-        $profile = $path . $name;
         $job_id = (int)$form_data['job_id'];
         $first_name = $form_data['first_name'];
         $last_name = $form_data['last_name'];
